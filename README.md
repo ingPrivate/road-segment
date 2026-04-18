@@ -60,24 +60,3 @@ graph TD
 
 ## 五、參考資料 (References)
 1. **Achanta, R., et al.** "SLIC Superpixels Compared to State-of-the-art Superpixel Methods." *IEEE PAMI*, 2012.
-
----
-
-## 六、檔案目錄結構 (Optimized Folder Structure)
-```bash
-.
-├── road_detection.py      # 主程式：執行道路辨識與結果輸出
-├── road_analysis.py       # 分析腳本：特徵測試與影像預處理
-├── requirements.txt       # 專案依賴項
-├── input_images/          # [INPUT] 原始柏油路影像存放區
-├── output_results/        # [OUTPUT] 辨識結果輸出區
-└── process_comparison/    # [STAGES] 處理流程階段對比圖 (1280x720)
-```
-
----
-
-## 附錄：部署說明
-```bash
-pip install pipenv && pipenv shell
-pip install -r requirements.txt
-```
