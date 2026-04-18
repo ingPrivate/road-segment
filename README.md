@@ -24,7 +24,7 @@
 
 ```
 
-### 2. 系統架構流程 (Pipeline via Mermaid)
+### 2. 系統架構流程 (Pipeline)
 ```mermaid
 graph TD
     A[輸入影像] --> B[色彩空間轉換 BGR/RGB/HSV]
@@ -39,13 +39,14 @@ graph TD
 ```
 
 ### 3. Pipeline 演算法細節
-1. **空間轉換**：同步處理 RGB、Gray 及 HSV 色彩空間。
-2. **SLIC 分群**：分割影像為 300 個超像素區塊。
-3. **HSV 遮罩**：鎖定低飽和度（灰色）區域。
-4. **區塊投票**：若超像素區塊內有超過 50% 道路像素，則判定該區塊為道路。
-5. **形態學清理**：執行 Close 與 Open 運算，平滑邊緣並去除噪點。
-6. **最大連通區**：定位影像中面積最大的物件作為主道路。
-7. **Alpha Blending**：影像疊加顯示，標註偵測範圍。
+1. **空間轉換**：同步處理 RGB、Gray 及 HSV 色彩空間 (`cv2.cvtColor`)。
+2. **SLIC 分群**：分割影像為 300 個超像素區塊 (`skimage.segmentation.slic`)。
+3. **HSV 遮罩**：鎖定低飽和度（灰色）區域 (`cv2.inRange`)。
+4. **區塊投票 (Voting Logic)**：若超像素區塊內有超過 50% 道路像素，則判定該區塊為道路。
+5. **形態學清理**：執行 Close 與 Open 運算，平滑邊緣並去除噪點 (`cv2.morphologyEx`)。
+6. **最大連通區**：定位影像中面積最大的物件作為主道路 (`cv2.connectedComponentsWithStats`)。
+7. **LBP 特徵提取 (Optional Logic)**：計算局部二值模式以強化紋理辨識 (`compute_lbp` in road_detection.py)。
+8. **結果疊加 (Alpha Blending)**：影像疊加顯示，標註偵測範圍 (`cv2.addWeighted`)。
 
 ## 四、結果圖
 ### 1. 最終道路區域標註 (Overlay Results)
