@@ -11,8 +11,8 @@ env/
 .env
 
 # Project specific outputs (Generated artifacts)
-output_results/
-process_comparison/
+# output_results/
+# process_comparison/
 
 # IDEs
 .vscode/
