@@ -15,15 +15,15 @@
 ### 1. 系統架構流程 (Pipeline)
 ```mermaid
 graph TD
-    A[輸入影像] -->|numpy.ndarray| B[色彩空間轉換 BGR/RGB/HSV]
-    B -->|numpy.ndarray| C[SLIC 超像素分割]
-    B -->|numpy.ndarray| D[HSV 道路顏色遮罩]
-    C -->|numpy.ndarray| E[超像素區塊投票]
-    D -->|numpy.ndarray| E
-    E -->|numpy.ndarray| F[形態學清理 Open/Close]
-    F -->|numpy.ndarray| G[最大連通區篩選]
-    G -->|numpy.ndarray| H[結果疊加標註]
-    H -->|numpy.ndarray| I[輸出最終影像]
+    A[輸入影像] -->|np.ndarray, uint8, 720x1280x3| B[色彩空間轉換 BGR/RGB/HSV]
+    B -->|np.ndarray, float64, 720x1280x3| C[SLIC 超像素分割]
+    B -->|np.ndarray, uint8, 720x1280x3| D[HSV 道路顏色遮罩]
+    C -->|np.ndarray, int32, 720x1280| E[超像素區塊投票]
+    D -->|np.ndarray, uint8, 720x1280| E
+    E -->|np.ndarray, uint8, 720x1280| F[形態學清理 Open/Close]
+    F -->|np.ndarray, uint8, 720x1280| G[最大連通區篩選]
+    G -->|np.ndarray, uint8, 720x1280| H[結果疊加標註]
+    H -->|np.ndarray, uint8, 720x1280x3| I[輸出最終影像]
 ```
 
 ### 2. Pipeline 演算法細節
