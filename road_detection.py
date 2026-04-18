@@ -1,8 +1,7 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-from skimage.feature import local_binary_pattern
 import os
+from skimage.feature import local_binary_pattern
 
 # 建立輸出目錄
 output_dir = "output_results"
@@ -18,16 +17,24 @@ for img_file in image_files:
     if image is None:
         continue
 
+    h, w = image.shape[:2]
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # 直方圖均衡化（Gray Image）
     equalized_gray = cv2.equalizeHist(gray_image)
 
-    # 設定道路顏色的 HSV 範圍
-    lower_gray = np.array([0, 0, 20])
-    upper_gray = np.array([180, 45, 200])
+    # 設定道路顏色的 HSV 範圍 (收緊範圍，排除樹木)
+    lower_gray = np.array([0, 0, 45])
+    upper_gray = np.array([180, 120, 170])
     road_mask = cv2.inRange(hsv_image, lower_gray, upper_gray)
+
+    # =========================
+    # Spatial ROI Mask (忽略上半部 50%)
+    # =========================
+    roi_mask = np.zeros((h, w), dtype=np.uint8)
+    roi_mask[int(h * 0.50):, :] = 255
+    road_mask = cv2.bitwise_and(road_mask, roi_mask)
 
     # 計算 LBP 並僅保留道路區域
     def compute_lbp(image, mask, P=8, R=2):
@@ -39,6 +46,10 @@ for img_file in image_files:
 
     # 對 LBP 圖像進行二值化
     _, mask = cv2.threshold(lbp_image.astype(np.uint8), 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    # 形態學清理
+    kernel = np.ones((5, 5), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
     # 尋找輪廓並保留最大區塊
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -63,4 +74,4 @@ for img_file in image_files:
     output_path = os.path.join(output_dir, output_filename)
     cv2.imwrite(output_path, output)
 
-print("完成：LBP road detection 已處理所有圖片")
+print("完成：LBP road detection (已加入天空排除邏輯)")
