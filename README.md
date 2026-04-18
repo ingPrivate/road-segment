@@ -12,19 +12,7 @@
 * **區域完整性**：藉由最大連通區篩選，剔除路邊雜物。
 
 ## 三、設計
-### 1. 檔案目錄結構 (Optimized Folder Structure)
-```bash
-.
-├── road_detection.py      # 主程式：執行道路辨識與結果輸出
-├── road_analysis.py       # 分析腳本：特徵測試與影像預處理
-├── requirements.txt       # 專案依賴項
-├── input_images/          # [INPUT] 原始柏油路影像存放區
-├── output_results/        # [OUTPUT] 辨識結果輸出區
-└───process_comparison/    # [STAGES] 處理流程階段對比圖 (1280x720)
-
-```
-
-### 2. 系統架構流程 (Pipeline)
+### 1. 系統架構流程 (Pipeline)
 ```mermaid
 graph TD
     A[輸入影像] --> B[色彩空間轉換 BGR/RGB/HSV]
@@ -38,7 +26,7 @@ graph TD
     H --> I[輸出最終影像]
 ```
 
-### 3. Pipeline 演算法細節
+### 2. Pipeline 演算法細節
 1. **空間轉換**：同步處理 RGB、Gray 及 HSV 色彩空間 (`cv2.cvtColor`)。
 2. **SLIC 分群**：分割影像為 300 個超像素區塊 (`skimage.segmentation.slic`)。
 3. **HSV 遮罩**：鎖定低飽和度（灰色）區域 (`cv2.inRange`)。
@@ -49,20 +37,42 @@ graph TD
 8. **結果疊加 (Alpha Blending)**：影像疊加顯示，標註偵測範圍 (`cv2.addWeighted`)。
 
 ## 四、結果圖
-### 1. 最終道路區域標註 (Overlay Results)
-| 測試場景 | 辨識成果 |
-| :---: | :---: |
-| <img src="output_results/road_final_slic_road_01.jpg" width="300"><br>*Fig 1.1 道路中心線標註* | <img src="output_results/road_final_slic_road_02.jpg" width="300"><br>*Fig 1.2 側向邊界偵測* |
-| <img src="output_results/road_final_slic_road_03.jpg" width="300"><br>*Fig 1.3 遠景道路處理* | <img src="output_results/road_final_slic_road_04.jpg" width="300"><br>*Fig 1.4 不同光照穩定性* |
-
-### 2. 階段性對比 (Stages Comparison)
+### 階段性對比 (Stages Comparison)
 ![image](process_comparison/Figure_1.png)
-*Fig 2.1 影像處理流程對比：原始影像 (1280x720) ➜ SLIC 分割 ➜ 最終 Mask*
+*Fig 1.1 影像處理流程對比：原始影像 (1280x720) ➜ SLIC 分割 ➜ 最終 Mask (Image 1)*
+
+![image](process_comparison/Figure_2.png)
+*Fig 1.2 影像處理流程對比：原始影像 (1280x720) ➜ SLIC 分割 ➜ 最終 Mask (Image 2)*
+
+![image](process_comparison/Figure_3.png)
+*Fig 1.3 影像處理流程對比：原始影像 (1280x720) ➜ SLIC 分割 ➜ 最終 Mask (Image 3)*
+
+![image](process_comparison/Figure_4.png)
+*Fig 1.4 影像處理流程對比：原始影像 (1280x720) ➜ SLIC 分割 ➜ 最終 Mask (Image 4)*
+
+![image](process_comparison/Figure_5.png)
+*Fig 1.5 影像處理流程對比：原始影像 (1280x720) ➜ SLIC 分割 ➜ 最終 Mask (Image 5)*
+
+![image](process_comparison/Figure_6.png)
+*Fig 1.6 影像處理流程對比：原始影像 (1280x720) ➜ SLIC 分割 ➜ 最終 Mask (Image 6)*
 
 ---
 
 ## 五、參考資料 (References)
 1. **Achanta, R., et al.** "SLIC Superpixels Compared to State-of-the-art Superpixel Methods." *IEEE PAMI*, 2012.
+
+---
+
+## 六、檔案目錄結構 (Optimized Folder Structure)
+```bash
+.
+├── road_detection.py      # 主程式：執行道路辨識與結果輸出
+├── road_analysis.py       # 分析腳本：特徵測試與影像預處理
+├── requirements.txt       # 專案依賴項
+├── input_images/          # [INPUT] 原始柏油路影像存放區
+├── output_results/        # [OUTPUT] 辨識結果輸出區
+└── process_comparison/    # [STAGES] 處理流程階段對比圖 (1280x720)
+```
 
 ---
 
