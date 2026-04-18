@@ -15,15 +15,15 @@
 ### 1. 系統架構流程 (Pipeline)
 ```mermaid
 graph TD
-    A[輸入影像] --> B[色彩空間轉換 BGR/RGB/HSV]
-    B --> C[SLIC 超像素分割]
-    B --> D[HSV 道路顏色遮罩]
-    C --> E[超像素區塊投票]
-    D --> E
-    E --> F[形態學清理 Open/Close]
-    F --> G[最大連通區篩選]
-    G --> H[結果疊加標註]
-    H --> I[輸出最終影像]
+    A[輸入影像] -->|data type| B[色彩空間轉換 BGR/RGB/HSV]
+    B -->|data type| C[SLIC 超像素分割]
+    B -->|data type| D[HSV 道路顏色遮罩]
+    C -->|data type| E[超像素區塊投票]
+    D -->|data type| E
+    E -->|data type| F[形態學清理 Open/Close]
+    F -->|data type| G[最大連通區篩選]
+    G -->|data type| H[結果疊加標註]
+    H -->|data type| I[輸出最終影像]
 ```
 
 ### 2. Pipeline 演算法細節
