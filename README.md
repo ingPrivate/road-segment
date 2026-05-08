@@ -24,7 +24,7 @@ graph TD
     C -->|np.ndarray, int32| D[SLIC 超像素分群]
     D -->|np.ndarray, uint8| E[超像素投票與色彩種子約束]
     E -->|np.ndarray, uint8| F[GrabCut 邊界精煉優化]
-    F -->|np.ndarray, uint8| G[最大連通區篩選
+    F -->|np.ndarray, uint8| G[最大連通區篩選]
     G -->|np.ndarray, uint8| H[結果疊加標註]
     H -->|np.ndarray, uint8, 720x1280x3| I[輸出最終影像]
 ```
