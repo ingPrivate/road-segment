@@ -33,8 +33,7 @@ graph TD
 4. **區塊投票 (Voting Logic)**：若超像素區塊內有超過 50% 道路像素，則判定該區塊為道路。
 5. **形態學清理**：執行 Close 與 Open 運算，平滑邊緣並去除噪點 (`cv2.morphologyEx`)。
 6. **最大連通區**：定位影像中面積最大的物件作為主道路 (`cv2.connectedComponentsWithStats`)。
-7. **LBP 特徵提取 (Optional Logic)**：計算局部二值模式以強化紋理辨識 (`compute_lbp` in road_detection.py)。
-8. **結果疊加 (Alpha Blending)**：影像疊加顯示，標註偵測範圍 (`cv2.addWeighted`)。
+7. **結果疊加 (Alpha Blending)**：影像疊加顯示，標註偵測範圍 (`cv2.addWeighted`)。
 
 ## 四、結果圖
 ### 階段性對比 (Stages Comparison)
