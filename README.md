@@ -29,32 +29,23 @@ graph TD
     H -->|np.ndarray, uint8, 720x1280x3| I[輸出最終影像]
 ```
 
-### 2. Pipeline 演算法細節
-1. **影像預處理**：採用 CLAHE (`cv2.createCLAHE`) 提升暗部路面對比度。
-2. **幾何與紋理約束**：建構動態 **Tight ROI** (收窄底邊之梯形) 與 Sobel 梯度遮罩，有效解決影像兩側斜坡誤判問題。
-3. **SLIC 分群**：分割影像為 500 個超像素區塊 (`skimage.segmentation.slic`)，增加邊界細節。
-4. **多重顏色遮罩**：鎖定瀝青灰與車道標線黃/白區域 (`cv2.inRange`)。
-5. **色彩種子約束**：計算超像素與底部中心「**路面種子 (Seed Color)**」的歐幾里得距離，作為排除顏色相近但色調不同物體之關鍵門檻。
-6. **GrabCut 精煉**：以投票結果為基礎進行 3 次 GrabCut 迭代 (`cv2.grabCut`)，自動優化切割邊界。
-7. **最大連通區**：定位影像中面積最大且符合幾何特徵的物件作為主道路 (`cv2.connectedComponentsWithStats`)。
-8. **結果疊加**：影像透明度疊加顯示，標註偵測範圍 (`cv2.addWeighted`)。
-
 ## 四、驗證
-### 階段性對比 (Stages Comparison - Road 01)
-展示完整 Pipeline 的 8 個處理階段結果：
+### 1. 階段性對比 (Stages Comparison - Road 01)
+展示完整 Pipeline 的 8 個處理階段結果與演算法細節：
 
 | 階段 | 說明 | 影像結果 |
 | :--- | :--- | :--- |
-| **Stage 1** | **原始影像** (Input) | ![Stage 1](pipeline_stages/stage1_input.jpg) |
-| **Stage 2** | **色彩與對比度增強** (CLAHE) | ![Stage 2](pipeline_stages/stage2_clahe.jpg) |
-| **Stage 3** | **幾何與紋理過濾遮罩** | ![Stage 3](pipeline_stages/stage3_combined_mask.jpg) |
-| **Stage 4** | **SLIC 超像素分群** | ![Stage 4](pipeline_stages/stage4_slic.jpg) |
-| **Stage 5** | **超像素投票與色彩種子約束** | ![Stage 5](pipeline_stages/stage5_voting.jpg) |
-| **Stage 6** | **GrabCut 邊界精煉優化** | ![Stage 6](pipeline_stages/stage6_grabcut.jpg) |
-| **Stage 7** | **最大連通區篩選** | ![Stage 7](pipeline_stages/stage7_final_mask.jpg) |
-| **Stage 8** | **結果疊加標註** (Output) | ![Stage 8](pipeline_stages/stage8_overlay.jpg) |
+| **Stage 1** | **原始影像**：輸入 1280x720 之 png/jpg 格式影像。 | ![Stage 1](pipeline_stages/stage1_input.jpg) |
+| **Stage 2** | **影像預處理**：採用 CLAHE (`cv2.createCLAHE`) 提升暗部路面對比度。 | ![Stage 2](pipeline_stages/stage2_clahe.jpg) |
+| **Stage 3** | **幾何與紋理約束**：建構動態 **Tight ROI** 與 Sobel 梯度遮罩，有效解決影像兩側斜坡誤判問題。 | ![Stage 3](pipeline_stages/stage3_combined_mask.jpg) |
+| **Stage 4** | **SLIC 分群**：將影像分割為 500 個超像素區塊，增加邊界細節捕捉能力。 | ![Stage 4](pipeline_stages/stage4_slic.jpg) |
+| **Stage 5** | **色彩種子約束**：計算超像素與「**路面種子 (Seed Color)**」的色彩距離，作為排除干擾物之投票門檻。 | ![Stage 5](pipeline_stages/stage5_voting.jpg) |
+| **Stage 6** | **GrabCut 精煉**：以投票結果為基礎進行 3 次迭代，自動優化切割邊界。 | ![Stage 6](pipeline_stages/stage6_grabcut.jpg) |
+| **Stage 7** | **最大連通區**：定位影像中面積最大且符合幾何特徵的物件作為主道路。 | ![Stage 7](pipeline_stages/stage7_final_mask.jpg) |
+| **Stage 8** | **結果疊加**：影像透明度疊加顯示，完成道路區域標註標記。 | ![Stage 8](pipeline_stages/stage8_overlay.jpg) |
 
-### 不同樣本對比 
+### 2. 不同樣本對比 
+
 ![image](process_comparison/Figure_1.png)
 *Fig 1.1 處理流程：原始影像 ➜ 綜合特徵遮罩 ➜ 最終優化結果 (Image 1)*
 
@@ -73,9 +64,19 @@ graph TD
 ![image](process_comparison/Figure_6.png)
 *Fig 1.6 處理流程：原始影像 ➜ 綜合特徵遮罩 ➜ 最終優化結果 (Image 6)*
 
+### 3. 測試統計 (Benchmarking)
+針對 9 張測試影像進行自動化評估，結果如下：
+
+| 指標 | 數值 | 說明 |
+| :--- | :--- | :--- |
+| **平均道路面積 (Avg Area)** | 13.02% | 偵測到之道路佔影像比例 |
+| **平均實心度 (Avg Solidity)** | 1.895 | 數值愈高代表道路區域愈完整且無破洞 |
+| **平均鋸齒度 (Avg Jagged)** | 0.04395 | 數值愈低代表邊界愈平滑 |
+
 ---
 
 
 ## 五、參考資料 (References)
 1. **Achanta, R., et al.** "SLIC Superpixels Compared to State-of-the-art Superpixel Methods." *IEEE PAMI*, 2012.
 2. **Rother, C., et al.** "GrabCut: Interactive Foreground Extraction using Iterated Graph Cuts." *ACM SIGGRAPH*, 2004.
+
