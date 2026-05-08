@@ -17,10 +17,9 @@ input_dir = "input_images"
 image_files = sorted([f for f in os.listdir(input_dir) if f.endswith(".jpg")])
 
 def optimize_image(image):
-    # 使用 CLAHE 提升對比度 (調降 clipLimit 避免暗部樹木過度曝光)
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=1.2, tileGridSize=(8, 8))
     cl = clahe.apply(l)
     limg = cv2.merge((cl, a, b))
     return cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
@@ -31,94 +30,94 @@ for i, img_file in enumerate(image_files):
     if image is None:
         continue
 
-    # 1. 預處理：增強對比度
-    enhanced = optimize_image(image)
     h, w = image.shape[:2]
-    rgb = cv2.cvtColor(enhanced, cv2.COLOR_BGR2RGB)
+    enhanced = optimize_image(image)
+    
+    # 1. 取得道路色彩種子 (底部中央區域)
+    seed_y1, seed_y2 = int(h*0.85), int(h*0.95)
+    seed_x1, seed_x2 = int(w*0.45), int(w*0.55)
+    seed_area = enhanced[seed_y1:seed_y2, seed_x1:seed_x2]
+    avg_seed_color = np.mean(seed_area, axis=(0, 1))
+
+    # 2. 梯度平滑度
+    gray = cv2.cvtColor(enhanced, cv2.COLOR_BGR2GRAY)
+    sobel = cv2.Sobel(gray, cv2.CV_64F, 1, 1, ksize=3)
+    abs_sobel = np.absolute(sobel)
+    smooth_mask = np.where(abs_sobel < 60, 255, 0).astype(np.uint8)
+
+    # 3. 幾何梯形 ROI (針對斜坡問題收窄底邊)
+    roi_poly = np.array([
+        [int(w*0.15), h],           # 收窄底邊從 0.02 -> 0.15
+        [int(w*0.45), int(h*0.42)], 
+        [int(w*0.55), int(h*0.42)], 
+        [int(w*0.85), h]            # 收窄底邊從 0.98 -> 0.85
+    ], dtype=np.int32)
+    geom_mask = np.zeros((h, w), dtype=np.uint8)
+    cv2.fillPoly(geom_mask, [roi_poly], 255)
+
+    # 4. 多重顏色遮罩
     hsv = cv2.cvtColor(enhanced, cv2.COLOR_BGR2HSV)
-
-    # 2. SLIC Superpixel (調整緊密度與分群數)
-    img_float = img_as_float(rgb)
-    segments = slic(
-        img_float,
-        n_segments=600,
-        compactness=15, # 稍微調高緊密度，避免區塊過度延伸到樹木
-        sigma=1,
-        start_label=1,
-        channel_axis=2
-    )
-
-    # 3. 多重顏色遮罩 (廣義路面顏色)
-    # 瀝青灰色 (收緊飽和度與提高最低亮度，嚴格排除暗處樹木)
-    lower_gray = np.array([0, 0, 40])
-    upper_gray = np.array([180, 120, 170])
+    lower_gray = np.array([0, 0, 30])
+    upper_gray = np.array([180, 100, 180])
     mask_gray = cv2.inRange(hsv, lower_gray, upper_gray)
-
-    # 黃色標線 (避免路面被分割)
-    lower_yellow = np.array([15, 40, 40])
-    upper_yellow = np.array([35, 255, 255])
+    
+    lower_yellow = np.array([15, 30, 80])
+    upper_yellow = np.array([40, 255, 255])
     mask_yellow = cv2.inRange(hsv, lower_yellow, upper_yellow)
+    
+    road_seed_mask = cv2.bitwise_or(mask_gray, mask_yellow)
+    
+    # 5. SLIC
+    rgb = cv2.cvtColor(enhanced, cv2.COLOR_BGR2RGB)
+    segments = slic(img_as_float(rgb), n_segments=500, compactness=10, channel_axis=2)
 
-    color_mask = cv2.bitwise_or(mask_gray, mask_yellow)
+    # 綜合過濾 (顏色 + 幾何 + 平滑)
+    combined_ref_mask = cv2.bitwise_and(road_seed_mask, geom_mask)
+    combined_ref_mask = cv2.bitwise_and(combined_ref_mask, smooth_mask)
 
-    # 4. 空間 ROI (動態調整，保留下半部)
-    roi_mask = np.zeros((h, w), dtype=np.uint8)
-    roi_mask[int(h * 0.50):, :] = 255 # 根據截圖將 ROI 起點改為 50%
-    color_mask = cv2.bitwise_and(color_mask, roi_mask)
-
-    # 5. 超像素投票
+    # 6. 超像素投票 (加入色彩種子距離檢查)
     mask = np.zeros((h, w), dtype=np.uint8)
     for seg_val in np.unique(segments):
         region = (segments == seg_val)
-        ratio = np.mean(color_mask[region] > 0)
-        if ratio > 0.3: # 調低門檻以捕捉更多路面
+        
+        # 計算與種子顏色的歐幾里得距離
+        seg_color = np.mean(enhanced[region], axis=0)
+        color_dist = np.linalg.norm(seg_color - avg_seed_color)
+        
+        # 投票門檻
+        if np.mean(combined_ref_mask[region] > 0) > 0.25 and color_dist < 60: 
             mask[region] = 255
 
-    # 6. 形態學清理
-    kernel = np.ones((11, 11), np.uint8)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    # 7. 橫向連通強化
+    bridge_kernel = np.ones((5, 25), np.uint8) 
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, bridge_kernel)
 
-    # 7. 最大連通區篩選
+    # 8. GrabCut & Final CC
+    bgdModel = np.zeros((1, 65), np.float64)
+    fgdModel = np.zeros((1, 65), np.float64)
+    gc_mask = np.where((mask > 0), 3, 2).astype('uint8')
+    if np.any(gc_mask == 3):
+        cv2.grabCut(image, gc_mask, None, bgdModel, fgdModel, 3, cv2.GC_INIT_WITH_MASK)
+        mask = np.where((gc_mask == 1) | (gc_mask == 3), 255, 0).astype('uint8')
+
     num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(mask)
     if num_labels > 1:
-        # 找出面積最大且位於下半部的區塊
-        areas = stats[1:, cv2.CC_STAT_AREA]
-        sorted_indices = np.argsort(areas)[::-1]
-        
-        best_label = 1
-        for idx in sorted_indices:
-            label_idx = idx + 1
-            # 檢查中心點是否在下半部
-            if stats[label_idx, cv2.CC_STAT_TOP] + stats[label_idx, cv2.CC_STAT_HEIGHT]/2 > h*0.5:
-                best_label = label_idx
-                break
-        
-        final_mask = (labels == best_label).astype(np.uint8) * 255
+        largest = 1 + np.argmax(stats[1:, cv2.CC_STAT_AREA])
+        final_mask = (labels == largest).astype(np.uint8) * 255
     else:
         final_mask = mask
 
-    # 8. Overlay & Save
     overlay = image.copy()
     overlay[final_mask > 0] = [0, 0, 255]
     output = cv2.addWeighted(overlay, 0.4, image, 0.6, 0)
-    
-    output_path = os.path.join(output_dir, f"road_final_slic_{img_file}")
-    cv2.imwrite(output_path, output)
+    cv2.imwrite(os.path.join(output_dir, f"road_final_slic_{img_file}"), output)
 
-    # 產出對比圖
     plt.figure(figsize=(15, 5))
-    plt.subplot(1, 3, 1)
-    plt.title(f"Original ({img_file})")
-    plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    plt.subplot(1, 3, 2)
-    plt.title("SLIC Segments (w/ CLAHE)")
-    plt.imshow(segments, cmap="nipy_spectral")
-    plt.subplot(1, 3, 3)
-    plt.title("Improved Road Mask")
-    plt.imshow(final_mask, cmap="gray")
+    plt.subplot(1, 3, 1); plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)); plt.title("Original")
+    plt.subplot(1, 3, 2); plt.imshow(combined_ref_mask, cmap="gray"); plt.title("Seed Color & Tight ROI")
+    plt.subplot(1, 3, 3); plt.imshow(cv2.cvtColor(output, cv2.COLOR_BGR2RGB)); plt.title("Final Result")
     plt.tight_layout()
     plt.savefig(os.path.join(comparison_dir, f"Figure_{i+1}.png"))
     plt.close()
 
-print("完成：SLIC 改良演算法已執行，包含 CLAHE 與多重遮罩邏輯。")
+print("完成：斜坡排除優化已執行。")
