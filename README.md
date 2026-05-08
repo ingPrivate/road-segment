@@ -40,8 +40,6 @@ graph TD
 8. **結果疊加**：影像透明度疊加顯示，標註偵測範圍 (`cv2.addWeighted`)。
 
 ## 四、驗證
-### 階段性對比 (Stages Comparison)
-## 四、驗證
 ### 階段性對比 (Stages Comparison - Road 01)
 展示完整 Pipeline 的 8 個處理階段結果：
 
@@ -55,6 +53,25 @@ graph TD
 | **Stage 6** | **GrabCut 邊界精煉優化** | ![Stage 6](pipeline_stages/stage6_grabcut.jpg) |
 | **Stage 7** | **最大連通區篩選** | ![Stage 7](pipeline_stages/stage7_final_mask.jpg) |
 | **Stage 8** | **結果疊加標註** (Output) | ![Stage 8](pipeline_stages/stage8_overlay.jpg) |
+
+### 不同樣本對比 
+![image](process_comparison/Figure_1.png)
+*Fig 1.1 處理流程：原始影像 ➜ 綜合特徵遮罩 ➜ 最終優化結果 (Image 1)*
+
+![image](process_comparison/Figure_2.png)
+*Fig 1.2 處理流程：原始影像 ➜ 綜合特徵遮罩 ➜ 最終優化結果 (Image 2)*
+
+![image](process_comparison/Figure_3.png)
+*Fig 1.3 處理流程：原始影像 ➜ 綜合特徵遮罩 ➜ 最終優化結果 (Image 3)*
+
+![image](process_comparison/Figure_4.png)
+*Fig 1.4 處理流程：原始影像 ➜ 綜合特徵遮罩 ➜ 最終優化結果 (Image 4)*
+
+![image](process_comparison/Figure_5.png)
+*Fig 1.5 處理流程：原始影像 ➜ 綜合特徵遮罩 ➜ 最終優化結果 (Image 5)*
+
+![image](process_comparison/Figure_6.png)
+*Fig 1.6 處理流程：原始影像 ➜ 綜合特徵遮罩 ➜ 最終優化結果 (Image 6)*
 
 ---
 
